@@ -20,6 +20,7 @@
 <meta name="msapplication-TileColor" content="#0a0a14"/>
 
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#0a0a14;color:#f0f0e8;font-family:'DM Sans',sans-serif;min-height:100vh;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
@@ -76,10 +77,66 @@ function fmtDuration(ms){
   const h=Math.floor(m/60), rem=m%60;
   return h+"ч "+(rem>0?rem+"м":"");
 }
-function loadTasks(){try{return JSON.parse(localStorage.getItem("fo_tasks")||"[]")}catch{return[]}}
-function saveTasks(t){localStorage.setItem("fo_tasks",JSON.stringify(t))}
+// ── SUPABASE ───────────────────────────────────────────────────────────────
+const SUPA_URL = "https://rtfwnmmpotwctilobkbm.supabase.co";
+const SUPA_KEY = "sb_publishable_fm3ecrnrSsrOjXCPkfti0w_fmkD4LpF";
+const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+let _currentUser = null;
+let _saveTimer = null;
+
+async function getSession(){
+  const {data:{session}} = await supa.auth.getSession();
+  _currentUser = session?.user || null;
+  return session;
+}
+
+async function signInWithGitHub(){
+  await supa.auth.signInWithOAuth({
+    provider: "github",
+    options: { redirectTo: window.location.origin }
+  });
+}
+
+async function signOut(){
+  await supa.auth.signOut();
+  _currentUser = null;
+  localStorage.removeItem("fo_tasks");
+  localStorage.removeItem("fo_energy");
+  renderLogin();
+}
+
+// Загрузка данных из Supabase (с fallback на localStorage)
+async function loadUserData(){
+  if(!_currentUser) return null;
+  const {data,error} = await supa.from("user_data").select("*").eq("user_id",_currentUser.id).single();
+  if(error || !data) return null;
+  return data;
+}
+
+// Сохранение всех данных (дебаунс 1.5с)
+function scheduleSave(){
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(()=>pushUserData(), 1500);
+}
+
+async function pushUserData(){
+  if(!_currentUser) return;
+  const payload = {
+    user_id: _currentUser.id,
+    tasks: loadTasksLocal(),
+    energy: JSON.parse(localStorage.getItem("fo_energy")||"{}"),
+    updated_at: new Date().toISOString()
+  };
+  await supa.from("user_data").upsert(payload, {onConflict:"user_id"});
+}
+
+// localStorage как кэш
+function loadTasksLocal(){try{return JSON.parse(localStorage.getItem("fo_tasks")||"[]")}catch{return[]}}
+function loadTasks(){return loadTasksLocal()}
+function saveTasks(t){localStorage.setItem("fo_tasks",JSON.stringify(t));scheduleSave()}
 function loadEnergy(){try{const d=JSON.parse(localStorage.getItem("fo_energy")||"null");return d&&d.date===todayStr()?d.level:null}catch{return null}}
-function saveEnergy(l){localStorage.setItem("fo_energy",JSON.stringify({date:todayStr(),level:l}))}
+function saveEnergy(l){localStorage.setItem("fo_energy",JSON.stringify({date:todayStr(),level:l}));scheduleSave()}
 
 // ── API ────────────────────────────────────────────────────────────────────
 async function callClaude(prompt, sys){
@@ -418,6 +475,15 @@ function buildApp(){
   const hdrR=h("div",{style:{display:"flex",gap:"8px",alignItems:"center"}});
   hdrR.appendChild(h("button",{style:{background:"#FF6B6B12",border:"1px solid #FF6B6B35",borderRadius:"8px",padding:"7px 13px",color:"#FF6B6B",fontSize:"12px",fontFamily:"monospace"},onClick:()=>setState({modal:"dump"})},"🧠 Brain Dump"));
   if(energy) hdrR.appendChild(h("div",{style:{fontSize:"18px",cursor:"pointer"},onClick:()=>setState({energy:null})},ENERGY_LEVELS.find(e=>e.value===energy)?.emoji||""));
+  // User avatar + logout
+  if(_currentUser){
+    const avatar = _currentUser.user_metadata?.avatar_url;
+    const name = _currentUser.user_metadata?.user_name || "";
+    const userBtn = h("div",{style:{display:"flex",alignItems:"center",gap:"6px",cursor:"pointer",padding:"4px 8px",borderRadius:"20px",border:"1px solid #181828"},onClick:()=>{if(confirm("Выйти из аккаунта?")) signOut()}});
+    if(avatar) userBtn.appendChild(h("img",{src:avatar,style:{width:"22px",height:"22px",borderRadius:"50%"}}));
+    userBtn.appendChild(h("span",{style:{fontSize:"11px",color:"#555",fontFamily:"monospace"}},name||"выйти"));
+    hdrR.appendChild(userBtn);
+  }
   hdrR.appendChild(h("div",{style:{background:"#0f0f1e",border:"1px solid #181828",borderRadius:"20px",padding:"4px 11px",fontSize:"13px",display:"flex",gap:"4px",alignItems:"center"}},
     h("span",{style:{color:"#E8FF47",fontFamily:"monospace",fontWeight:"700"}},doneCount),
     h("span",{style:{color:"#2a2a40"}},"/"),
@@ -1017,14 +1083,65 @@ function buildOverlay(onClick){
   return h("div",{style:{position:"fixed",inset:"0",background:"#04040ecc",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:"100",padding:"20px"},onClick});
 }
 
+// ── LOGIN SCREEN ──────────────────────────────────────────────────────────
+function renderLogin(){
+  const app = document.getElementById("app");
+  const wrap = h("div",{style:{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"32px",gap:"32px"}});
+
+  const logo = h("div",{style:{textAlign:"center"}});
+  logo.appendChild(h("div",{style:{fontFamily:"'Archivo Black',sans-serif",fontSize:"36px",letterSpacing:"-1px",color:"#f0f0e8"}},"Focus","OS".fontcolor("#E8FF47")));
+  logo.innerHTML = `<div style="font-family:'Archivo Black',sans-serif;font-size:36px;letter-spacing:-1px;color:#f0f0e8">Focus<span style="color:#E8FF47">OS</span></div>`;
+  logo.appendChild(h("div",{style:{color:"#444",fontSize:"14px",marginTop:"8px",fontFamily:"monospace",letterSpacing:"1px"}},"ТВОЙ AI-ПЛАНИРОВЩИК"));
+
+  const card = h("div",{style:{background:"#0f0f1e",border:"1px solid #1a1a2e",borderRadius:"20px",padding:"36px 32px",maxWidth:"360px",width:"100%",textAlign:"center",display:"flex",flexDirection:"column",gap:"20px"}});
+  card.appendChild(h("div",{style:{fontSize:"32px"}},"🔐"));
+  card.appendChild(h("div",{style:{color:"#f0f0e8",fontSize:"18px",fontWeight:"600",fontFamily:"'Archivo Black',sans-serif"}},"Войди чтобы начать"));
+  card.appendChild(h("div",{style:{color:"#555",fontSize:"13px",lineHeight:"1.6"}},"Все твои задачи синхронизируются на всех устройствах"));
+
+  const btn = h("button",{
+    style:{background:"#f0f0e8",color:"#0a0a14",border:"none",borderRadius:"12px",padding:"15px 24px",fontSize:"15px",fontWeight:"700",display:"flex",alignItems:"center",justifyContent:"center",gap:"10px",cursor:"pointer"},
+    onClick: signInWithGitHub
+  });
+  btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>Войти через GitHub`;
+
+  card.appendChild(btn);
+  card.appendChild(h("div",{style:{color:"#333",fontSize:"11px",fontFamily:"monospace"}},"Данные хранятся в твоём аккаунте • Бесплатно"));
+
+  wrap.appendChild(logo);
+  wrap.appendChild(card);
+  app.replaceChildren(wrap);
+}
+
 // ── INIT ───────────────────────────────────────────────────────────────────
-window.addEventListener("DOMContentLoaded",()=>{
-  if(!state.energy) state.modal="energy";
-  render();
+window.addEventListener("DOMContentLoaded", async ()=>{
   // Register Service Worker
   if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('sw.js').then(()=>console.log('SW registered')).catch(()=>{});
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
   }
+
+  // Check auth
+  const session = await getSession();
+
+  if(!session){
+    renderLogin();
+    return;
+  }
+
+  // Загружаем данные из Supabase и кладём в localStorage
+  const cloud = await loadUserData();
+  if(cloud){
+    localStorage.setItem("fo_tasks", JSON.stringify(cloud.tasks || []));
+    localStorage.setItem("fo_energy", JSON.stringify(cloud.energy || {}));
+    state.tasks = cloud.tasks || [];
+  }
+
+  if(!state.energy) state.modal="energy";
+  render();
+
+  // Слушаем изменения auth (на случай логаута в другой вкладке)
+  supa.auth.onAuthStateChange((event)=>{
+    if(event==="SIGNED_OUT"){ _currentUser=null; renderLogin(); }
+  });
 });
 </script>
 </body>
