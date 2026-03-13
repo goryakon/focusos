@@ -150,7 +150,7 @@ const TRANSLATIONS = {
   }
 };
 
-let _lang = localStorage.getItem("fo_lang") || "ru";
+let _lang = localStorage.getItem("fo_lang") || "en";
 function t(){ return TRANSLATIONS[_lang]; }
 function setLang(l){ _lang=l; localStorage.setItem("fo_lang",l); render(); }
 
