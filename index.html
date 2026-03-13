@@ -193,12 +193,21 @@ async function loadUserData(){
 }
 
 // Сохранение всех данных (дебаунс 1.5с)
+let _saveStatus = "saved"; // "saving" | "saved" | "error"
+function setSaveStatus(s){ _saveStatus=s; const el=document.getElementById("save-status"); if(el) renderSaveStatus(el); }
+function renderSaveStatus(el){
+  if(_saveStatus==="saving") { el.textContent="↑ saving..."; el.style.color="#555"; }
+  else if(_saveStatus==="saved") { el.textContent="✓ saved"; el.style.color="#2ED573"; }
+  else { el.textContent="⚠ offline"; el.style.color="#FFA502"; }
+}
+
 function scheduleSave(){
   clearTimeout(_saveTimer);
+  setSaveStatus("saving");
   _saveTimer = setTimeout(()=>pushUserData(), 1500);
 }
 
-async function pushUserData(){
+async function pushUserData(retries=3){
   if(!_currentUser) return;
   const payload = {
     user_id: _currentUser.id,
@@ -206,7 +215,19 @@ async function pushUserData(){
     energy: JSON.parse(localStorage.getItem("fo_energy")||"{}"),
     updated_at: new Date().toISOString()
   };
-  await supa.from("user_data").upsert(payload, {onConflict:"user_id"});
+  try {
+    const {error} = await supa.from("user_data").upsert(payload, {onConflict:"user_id"});
+    if(error) throw error;
+    setSaveStatus("saved");
+  } catch(e) {
+    if(retries > 0) {
+      await new Promise(r=>setTimeout(r, 2000));
+      return pushUserData(retries-1);
+    }
+    setSaveStatus("error");
+    // Store pending save flag - will retry on next load
+    localStorage.setItem("fo_pending_save","1");
+  }
 }
 
 // localStorage как кэш
@@ -549,12 +570,16 @@ function buildApp(){
   const hdr=h("div",{style:{padding:"18px 20px 14px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid #0f0f1e",position:"sticky",top:"0",background:"#0a0a14",zIndex:"10"}});
   const logoWrap=h("div",{});
   logoWrap.appendChild(h("div",{style:{fontFamily:"'Archivo Black',sans-serif",fontSize:"21px",letterSpacing:"-0.5px"}},"FOCUS",h("span",{style:{color:"#E8FF47"}},"OS")));
-  const dateTimeEl = h("div",{style:{fontSize:"10px",color:"#3a3a50",fontFamily:"monospace",marginTop:"2px",letterSpacing:"0.5px"}});
+  const dateTimeEl = h("div",{style:{display:"flex",alignItems:"center",gap:"8px",marginTop:"2px"}});
+  const clockEl = h("span",{style:{fontSize:"10px",color:"#3a3a50",fontFamily:"monospace",letterSpacing:"0.5px"}});
+  const statusEl = h("span",{id:"save-status",style:{fontSize:"9px",fontFamily:"monospace",color:"#2ED573",letterSpacing:"0.3px"}});
+  statusEl.textContent="✓ saved";
+  dateTimeEl.append(clockEl, statusEl);
   function updateClock(){
     const now = new Date();
     const date = now.toLocaleDateString(i18n().locale,{weekday:"long",day:"numeric",month:"long"}).toUpperCase();
     const time = now.toLocaleTimeString(i18n().locale,{hour:"2-digit",minute:"2-digit",second:"2-digit"});
-    dateTimeEl.textContent = date + "  •  " + time;
+    clockEl.textContent = date + "  •  " + time;
   }
   updateClock();
   setInterval(updateClock, 1000);
@@ -1239,6 +1264,20 @@ window.addEventListener("DOMContentLoaded", async ()=>{
     localStorage.setItem("fo_tasks", JSON.stringify(cloud.tasks || []));
     localStorage.setItem("fo_energy", JSON.stringify(cloud.energy || {}));
     state.tasks = cloud.tasks || [];
+  }
+
+  // Сохраняем при скрытии вкладки или закрытии
+  document.addEventListener("visibilitychange", ()=>{
+    if(document.visibilityState==="hidden" && _currentUser) pushUserData();
+  });
+  window.addEventListener("beforeunload", ()=>{
+    if(_currentUser) pushUserData();
+  });
+
+  // Если прошлая сессия не успела сохранить — сохраняем сейчас
+  if(localStorage.getItem("fo_pending_save")==="1"){
+    localStorage.removeItem("fo_pending_save");
+    pushUserData();
   }
 
   if(!state.energy) state.modal="energy";
