@@ -40,34 +40,130 @@ button{font-family:'DM Sans',sans-serif;cursor:pointer}
 
 
 const CATEGORIES = {
-  work:     {label:"Работа",   color:"#4ECDC4", icon:"⚡"},
-  personal: {label:"Личное",   color:"#FF6B6B", icon:"🎯"},
-  learning: {label:"Обучение", color:"#A78BFA", icon:"📚"},
-  home:     {label:"Быт",      color:"#F59E0B", icon:"🏠"},
+  work:     {get label(){return t().categories.work},     color:"#4ECDC4", icon:"⚡"},
+  personal: {get label(){return t().categories.personal}, color:"#FF6B6B", icon:"🎯"},
+  learning: {get label(){return t().categories.learning}, color:"#A78BFA", icon:"📚"},
+  home:     {get label(){return t().categories.home},     color:"#F59E0B", icon:"🏠"},
 };
 const PRIORITIES = {
-  high:   {label:"Важно",   color:"#FF4757", dot:"●"},
-  medium: {label:"Среднее", color:"#FFA502", dot:"●"},
-  low:    {label:"Потом",   color:"#2ED573", dot:"●"},
+  high:   {get label(){return t().priorities.high},   color:"#FF4757", dot:"●"},
+  medium: {get label(){return t().priorities.medium}, color:"#FFA502", dot:"●"},
+  low:    {get label(){return t().priorities.low},    color:"#2ED573", dot:"●"},
 };
 const ENERGY_LEVELS = [
-  {value:1,label:"Еле живой",emoji:"🪫"},
-  {value:2,label:"Так себе", emoji:"😶"},
-  {value:3,label:"Нормально",emoji:"😐"},
-  {value:4,label:"Бодрый",   emoji:"💪"},
-  {value:5,label:"На пике",  emoji:"🔥"},
+  {value:1, get label(){return t().energy[0]}, emoji:"🪫"},
+  {value:2, get label(){return t().energy[1]}, emoji:"😶"},
+  {value:3, get label(){return t().energy[2]}, emoji:"😐"},
+  {value:4, get label(){return t().energy[3]}, emoji:"💪"},
+  {value:5, get label(){return t().energy[4]}, emoji:"🔥"},
 ];
+
+// ── i18n ───────────────────────────────────────────────────────────────────
+const TRANSLATIONS = {
+  ru: {
+    categories: {work:"Работа",personal:"Личное",learning:"Обучение",home:"Быт"},
+    priorities: {high:"Важно",medium:"Среднее",low:"Потом"},
+    energy: ["Еле живой","Так себе","Нормально","Бодрый","На пике"],
+    today:"Сегодня", yesterday:"Вчера",
+    tabs: {today:"Сегодня",backlog:"Бэклог",done:"✅ Выполнено"},
+    empty: {
+      today:"Задач нет", todaySub:"Добавь задачу или сделай Brain Dump",
+      backlog:t().empty.backlog, done:t().empty.done
+    },
+    login: {
+      title:t().login.title,
+      sub:t().login.sub,
+      google:"Войти через Google", github:"Войти через GitHub",
+      footer:t().login.footer,
+      tagline:t().login.tagline
+    },
+    signout:t().signout,
+    brainDump:"🧠 Brain Dump",
+    focusMode:t().focusMode,
+    newTask:t().newTask,
+    addTask:"Добавить задачу",
+    addTaskBtn:"+ Задача",
+    titlePlaceholder:"Что нужно сделать?",
+    whyPlaceholder:"Зачем это важно? (необязательно)",
+    dueToday:"📌 Сегодня", backlogTab:"📋 Бэклог",
+    save:"Сохранить", cancel:"Отмена",
+    brainDumpTitle:"Выгрузи всё из голоы", brainDumpReview:"Вот что я нашёл:",
+    analyze:"🔍 Анализировать",
+    addSelected:"Добавить", redo:t().redo,
+    startDay:t().startDay,
+    energyQ:"Как твой уровень энергии прямо сейчас?",
+    whyBlock:"🧠 ПОЧЕМУ ПРОКРАСТИНИРУЕШЬ",
+    aiSteps:"✨ AI-шаги",
+    addSteps:"Добавить выбранные шаги",
+    complete:"Завершить задачу ✓",
+    startFocus:"⚡ Войти в фокус",
+    noTasks:t().noTasks,
+    noTasksSub:t().noTasksSub,
+    startDump:t().startDump,
+    recording:"● Запись...", stopRec:"■ Стоп",
+    locale:"ru-RU",
+    confirmSignout:t().confirmSignout,
+  },
+  en: {
+    categories: {work:"Work",personal:"Personal",learning:"Learning",home:"Home"},
+    priorities: {high:"High",medium:"Medium",low:"Low"},
+    energy: ["Dead tired","So-so","Okay","Energized","On fire"],
+    today:"Today", yesterday:"Yesterday",
+    tabs: {today:"Today",backlog:"Backlog",done:"✅ Done"},
+    empty: {
+      today:"No tasks yet", todaySub:"Add a task or try Brain Dump",
+      backlog:"Backlog is empty", done:"No completed tasks yet"
+    },
+    login: {
+      title:"Sign in to get started",
+      sub:"Your tasks sync across all your devices",
+      google:"Continue with Google", github:"Continue with GitHub",
+      footer:"Data stored in your account • Free",
+      tagline:"YOUR AI PLANNER"
+    },
+    signout:"sign out",
+    brainDump:"🧠 Brain Dump",
+    focusMode:"⚡ FOCUS MODE",
+    newTask:"NEW TASK",
+    addTask:"Add task",
+    addTaskBtn:"+ Task",
+    titlePlaceholder:"What needs to be done?",
+    whyPlaceholder:"Why does this matter? (optional)",
+    dueToday:"📌 Today", backlogTab:"📋 Backlog",
+    save:"Save", cancel:"Cancel",
+    brainDumpTitle:"Empty your mind", brainDumpReview:"Here's what I found:",
+    analyze:"🔍 Analyze",
+    addSelected:"Add", redo:"← Redo",
+    startDay:"Start the day →",
+    energyQ:"How's your energy level right now?",
+    whyBlock:"🧠 WHY YOU'RE PROCRASTINATING",
+    aiSteps:"✨ AI steps",
+    addSteps:"Add selected steps",
+    complete:"Complete task ✓",
+    startFocus:"⚡ Enter focus",
+    noTasks:"Not sure where to start?",
+    noTasksSub:"Tell the AI everything on your mind — it'll build your task list",
+    startDump:"🎙 Start Brain Dump",
+    recording:"● Recording...", stopRec:"■ Stop",
+    locale:"en-US",
+    confirmSignout:"Sign out?",
+  }
+};
+
+let _lang = localStorage.getItem("fo_lang") || "ru";
+function t(){ return TRANSLATIONS[_lang]; }
+function setLang(l){ _lang=l; localStorage.setItem("fo_lang",l); render(); }
 
 // ── UTILS ──────────────────────────────────────────────────────────────────
 function genId(){return Math.random().toString(36).slice(2,9)}
 function todayStr(){return new Date().toISOString().slice(0,10)}
-function fmtTime(ts){return new Date(ts).toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"})}
+function fmtTime(ts){return new Date(ts).toLocaleTimeString(t().locale,{hour:"2-digit",minute:"2-digit"})}
 function fmtDate(dateStr){
   const dt = new Date(dateStr+"T00:00:00");
-  const t = todayStr(), y = new Date(Date.now()-86400000).toISOString().slice(0,10);
-  if(dateStr===t) return "Сегодня";
-  if(dateStr===y) return "Вчера";
-  return dt.toLocaleDateString("ru-RU",{weekday:"long",day:"numeric",month:"long"});
+  const today = todayStr(), y = new Date(Date.now()-86400000).toISOString().slice(0,10);
+  if(dateStr===today) return t().today;
+  if(dateStr===y) return t().yesterday;
+  return dt.toLocaleDateString(t().locale,{weekday:"long",day:"numeric",month:"long"});
 }
 function fmtDuration(ms){
   if(!ms||ms<0) return null;
@@ -359,7 +455,7 @@ async function startRecording(){
   if(!SR){setDump({error:"Голосовой ввод не поддерживается в этом браузере."});return}
   _liveTranscript = state.dump.transcript;
   const rec = new SR();
-  rec.lang="ru-RU"; rec.continuous=true; rec.interimResults=true;
+  rec.lang=t().locale; rec.continuous=true; rec.interimResults=true;
   let final=_liveTranscript?_liveTranscript+" ":"";
   rec.onresult=(e)=>{
     let interim="";
@@ -473,17 +569,18 @@ function buildApp(){
   const hdr=h("div",{style:{padding:"18px 20px 14px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid #0f0f1e",position:"sticky",top:"0",background:"#0a0a14",zIndex:"10"}});
   const logoWrap=h("div",{});
   logoWrap.appendChild(h("div",{style:{fontFamily:"'Archivo Black',sans-serif",fontSize:"21px",letterSpacing:"-0.5px"}},"FOCUS",h("span",{style:{color:"#E8FF47"}},"OS")));
-  logoWrap.appendChild(h("div",{style:{fontSize:"10px",color:"#3a3a50",fontFamily:"monospace",marginTop:"2px",letterSpacing:"0.5px"}},new Date().toLocaleDateString("ru-RU",{weekday:"long",day:"numeric",month:"long"}).toUpperCase()));
+  logoWrap.appendChild(h("div",{style:{fontSize:"10px",color:"#3a3a50",fontFamily:"monospace",marginTop:"2px",letterSpacing:"0.5px"}},new Date().toLocaleDateString(t().locale,{weekday:"long",day:"numeric",month:"long"}).toUpperCase()));
   const hdrR=h("div",{style:{display:"flex",gap:"8px",alignItems:"center"}});
-  hdrR.appendChild(h("button",{style:{background:"#FF6B6B12",border:"1px solid #FF6B6B35",borderRadius:"8px",padding:"7px 13px",color:"#FF6B6B",fontSize:"12px",fontFamily:"monospace"},onClick:()=>setState({modal:"dump"})},"🧠 Brain Dump"));
+  hdrR.appendChild(h("button",{style:{background:"transparent",border:"1px solid #1a1a2e",borderRadius:"20px",padding:"4px 10px",fontSize:"11px",color:"#555",fontFamily:"monospace",cursor:"pointer",letterSpacing:"0.5px"},onClick:()=>setLang(_lang==="ru"?"en":"ru")},_lang==="ru"?"EN":"RU"));
+  hdrR.appendChild(h("button",{style:{background:"#FF6B6B12",border:"1px solid #FF6B6B35",borderRadius:"8px",padding:"7px 13px",color:"#FF6B6B",fontSize:"12px",fontFamily:"monospace"},onClick:()=>setState({modal:"dump"})},t().brainDump));
   if(energy) hdrR.appendChild(h("div",{style:{fontSize:"18px",cursor:"pointer"},onClick:()=>setState({energy:null})},ENERGY_LEVELS.find(e=>e.value===energy)?.emoji||""));
   // User avatar + logout
   if(_currentUser){
     const avatar = _currentUser.user_metadata?.avatar_url;
     const name = _currentUser.user_metadata?.user_name || "";
-    const userBtn = h("div",{style:{display:"flex",alignItems:"center",gap:"6px",cursor:"pointer",padding:"4px 8px",borderRadius:"20px",border:"1px solid #181828"},onClick:()=>{if(confirm("Выйти из аккаунта?")) signOut()}});
+    const userBtn = h("div",{style:{display:"flex",alignItems:"center",gap:"6px",cursor:"pointer",padding:"4px 8px",borderRadius:"20px",border:"1px solid #181828"},onClick:()=>{if(confirm(t().confirmSignout)) signOut()}});
     if(avatar) userBtn.appendChild(h("img",{src:avatar,style:{width:"22px",height:"22px",borderRadius:"50%"}}));
-    userBtn.appendChild(h("span",{style:{fontSize:"11px",color:"#555",fontFamily:"monospace"}},name||"выйти"));
+    userBtn.appendChild(h("span",{style:{fontSize:"11px",color:"#555",fontFamily:"monospace"}},name||t().signout));
     hdrR.appendChild(userBtn);
   }
   hdrR.appendChild(h("div",{style:{background:"#0f0f1e",border:"1px solid #181828",borderRadius:"20px",padding:"4px 11px",fontSize:"13px",display:"flex",gap:"4px",alignItems:"center"}},
@@ -496,7 +593,7 @@ function buildApp(){
 
   // Tabs
   const tabs=h("div",{style:{display:"flex",borderBottom:"1px solid #0f0f1e",padding:"0 20px",overflowX:"auto"}});
-  [["today",`Сегодня (${todayTasks.length})`],["backlog",`Бэклог (${backlog.length})`],["done",`✅ Выполнено (${doneTasks.length})`]].forEach(([v,lbl])=>{
+  [["today",`${t().tabs.today} (${todayTasks.length})`],["backlog",`${t().tabs.backlog} (${backlog.length})`],["done",`${t().tabs.done} (${doneTasks.length})`]].forEach(([v,lbl])=>{
     tabs.appendChild(h("button",{style:{padding:"11px 14px",background:"transparent",border:"none",fontSize:"12px",fontFamily:"monospace",color:view===v?"#E8FF47":"#3a3a50",borderBottom:view===v?"2px solid #E8FF47":"2px solid transparent",letterSpacing:"0.3px",whiteSpace:"nowrap"},onClick:()=>setState({view:v})},lbl));
   });
   root.appendChild(tabs);
@@ -524,20 +621,20 @@ function buildApp(){
     }
     if(todayTasks.length===0){
       const emp=h("div",{style:{textAlign:"center",padding:"64px 0"}});
-      emp.append(h("div",{style:{fontSize:"44px",marginBottom:"14px"}},"🧠"),h("div",{style:{color:"#666",fontSize:"15px",marginBottom:"6px"}},"Не знаешь с чего начать?"),h("div",{style:{color:"#333",fontSize:"13px",marginBottom:"24px",lineHeight:"1.6"}},"Расскажи голосом всё что в голове — AI составит список"),h("button",{style:{background:"#E8FF47",color:"#0a0a14",border:"none",borderRadius:"10px",padding:"13px 28px",fontSize:"14px",fontWeight:"700"},onClick:()=>setState({modal:"dump"})},"🎙 Начать Brain Dump"));
+      emp.append(h("div",{style:{fontSize:"44px",marginBottom:"14px"}},"🧠"),h("div",{style:{color:"#666",fontSize:"15px",marginBottom:"6px"}},t().noTasks),h("div",{style:{color:"#333",fontSize:"13px",marginBottom:"24px",lineHeight:"1.6"}},t().noTasksSub),h("button",{style:{background:"#E8FF47",color:"#0a0a14",border:"none",borderRadius:"10px",padding:"13px 28px",fontSize:"14px",fontWeight:"700"},onClick:()=>setState({modal:"dump"})},t().startDump));
       cnt.appendChild(emp);
     } else {
       sorted.forEach(t=>{const c=buildTaskCard(t);c.className="task-in";cnt.appendChild(c)});
     }
   } else if(view==="backlog"){
     if(backlog.length===0){
-      cnt.appendChild(buildEmpty("📋","Бэклог пуст"));
+      cnt.appendChild(buildEmpty("📋",t().empty.backlog));
     } else {
       backlog.forEach(t=>{const c=buildTaskCard(t);c.className="task-in";cnt.appendChild(c)});
     }
   } else if(view==="done"){
     if(doneTasks.length===0){
-      cnt.appendChild(buildEmpty("✅","Пока нет выполненных задач"));
+      cnt.appendChild(buildEmpty("✅",t().empty.done));
     } else {
       const sorted2=[...doneTasks].sort((a,b)=>(b.doneAt||0)-(a.doneAt||0));
       const groups={};
@@ -671,7 +768,7 @@ function buildFocusModal(){
   const wrap=h("div",{"data-focus-wrap":"1",style:{maxWidth:"580px",width:"100%",padding:"0 20px",maxHeight:"90vh",overflowY:"auto"}});
 
   const hdr=h("div",{style:{display:"flex",justifyContent:"space-between",marginBottom:"24px"}});
-  hdr.append(h("div",{style:{fontSize:"10px",fontFamily:"monospace",color:cat.color,letterSpacing:"1.5px"}},"⚡ РЕЖИМ ФОКУСА"),h("button",{style:{background:"transparent",border:"none",color:"#444",fontSize:"16px",padding:"4px"},onClick:()=>setState({modal:null,focusTask:null})},"✕"));
+  hdr.append(h("div",{style:{fontSize:"10px",fontFamily:"monospace",color:cat.color,letterSpacing:"1.5px"}},t().focusMode),h("button",{style:{background:"transparent",border:"none",color:"#444",fontSize:"16px",padding:"4px"},onClick:()=>setState({modal:null,focusTask:null})},"✕"));
   wrap.appendChild(hdr);
   wrap.appendChild(h("h1",{style:{fontSize:"24px",fontFamily:"'Archivo Black',sans-serif",color:"#f0f0e8",lineHeight:"1.2",marginBottom:"6px"}},task.title));
   if(task.why) wrap.appendChild(h("p",{style:{color:"#666",fontSize:"13px",marginBottom:"20px",fontStyle:"italic"}},"Зачем: "+task.why));
@@ -795,12 +892,12 @@ function buildFocusModal(){
             }
             addAiStepsBtn.style.opacity = selectedAiSteps.size>0?"1":"0.3";
             addAiStepsBtn.disabled = selectedAiSteps.size===0;
-            addAiStepsBtn.textContent = "Добавить выбранные шаги ("+(selectedAiSteps.size)+")";
+            addAiStepsBtn.textContent = t().addSteps+" ("+(selectedAiSteps.size)+")";
           });
           stepRows.push({s,sr});
           analysisArea.appendChild(sr);
         });
-        const addAiStepsBtn = h("button",{style:{background:"#E8FF47",color:"#0a0a14",border:"none",borderRadius:"8px",padding:"8px 18px",fontSize:"13px",fontWeight:"700",marginTop:"8px",width:"100%",opacity:"0.3"}},"Добавить выбранные шаги (0)");
+        const addAiStepsBtn = h("button",{style:{background:"#E8FF47",color:"#0a0a14",border:"none",borderRadius:"8px",padding:"8px 18px",fontSize:"13px",fontWeight:"700",marginTop:"8px",width:"100%",opacity:"0.3"}},t().addSteps+" (0)");
         addAiStepsBtn.disabled = true;
         addAiStepsBtn.addEventListener("click",()=>{
           result.new_steps.forEach((s,i)=>{ if(selectedAiSteps.has(i)) addStep(task.id,s); });
@@ -961,7 +1058,7 @@ function buildEnergyModal(){
     grid.appendChild(h("button",{style:{padding:"12px 16px",borderRadius:"12px",border:"1px solid #181828",display:"flex",flexDirection:"column",alignItems:"center",gap:"4px",minWidth:"76px",background:state.energy===e.value?"#E8FF47":"#141428",color:state.energy===e.value?"#0a0a14":"#f0f0e8",transition:"all 0.15s",transform:state.energy===e.value?"scale(1.08)":"scale(1)"},onClick:()=>setState({energy:e.value})},h("span",{style:{fontSize:"26px"}},e.emoji),h("span",{style:{fontSize:"10px",marginTop:"4px",opacity:"0.8"}},e.label)));
   });
   modal.appendChild(grid);
-  modal.appendChild(h("button",{style:{background:"#E8FF47",color:"#0a0a14",border:"none",borderRadius:"10px",padding:"13px 24px",fontSize:"14px",fontWeight:"700",width:"100%",opacity:state.energy?"1":"0.3"},onClick:()=>{if(state.energy){saveEnergy(state.energy);setState({modal:null})}}},"Начать день →"));
+  modal.appendChild(h("button",{style:{background:"#E8FF47",color:"#0a0a14",border:"none",borderRadius:"10px",padding:"13px 24px",fontSize:"14px",fontWeight:"700",width:"100%",opacity:state.energy?"1":"0.3"},onClick:()=>{if(state.energy){saveEnergy(state.energy);setState({modal:null})}}},t().startDay));
   ov.appendChild(modal);
   return ov;
 }
@@ -972,7 +1069,7 @@ function buildAddModal(){
   const ov=buildOverlay(()=>setState({modal:null}));
   const modal=h("div",{style:{background:"#0d0d1a",border:"1px solid #181828",borderRadius:"16px",padding:"28px",width:"100%",maxWidth:"480px"},onClick:e=>e.stopPropagation()});
   const hdr=h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"20px"}});
-  hdr.append(h("div",{style:{fontSize:"10px",fontFamily:"monospace",color:"#444",letterSpacing:"1.5px"}},"НОВАЯ ЗАДАЧА"),h("button",{style:{background:"transparent",border:"none",color:"#444",fontSize:"16px",padding:"4px"},onClick:()=>setState({modal:null})},"✕"));
+  hdr.append(h("div",{style:{fontSize:"10px",fontFamily:"monospace",color:"#444",letterSpacing:"1.5px"}},t().newTask),h("button",{style:{background:"transparent",border:"none",color:"#444",fontSize:"16px",padding:"4px"},onClick:()=>setState({modal:null})},"✕"));
   modal.appendChild(hdr);
   const inp=h("input",{id:"add-title",placeholder:"Что нужно сделать?",value:a.title,style:{width:"100%",background:"#0f0f1e",border:"1px solid #1e1e30",borderRadius:"8px",padding:"11px 13px",color:"#f0f0e8",fontSize:"14px",fontFamily:"'DM Sans',sans-serif"}});
   inp.addEventListener("input",e=>{state.add.title=e.target.value});
@@ -988,7 +1085,7 @@ function buildAddModal(){
   Object.entries(PRIORITIES).forEach(([k,v])=>priRow.appendChild(h("button",{style:{padding:"5px 10px",borderRadius:"6px",border:`1px solid ${a.priority===k?v.color:"#252540"}`,fontSize:"12px",background:a.priority===k?v.color+"20":"transparent",color:a.priority===k?v.color:"#666",whiteSpace:"nowrap"},onClick:()=>setState({add:{...state.add,priority:k}})},v.dot+" "+v.label)));
   modal.appendChild(priRow);
   const dayRow=h("div",{style:{display:"flex",gap:"6px",marginTop:"8px"}});
-  [[true,"📌 Сегодня"],[false,"📋 Бэклог"]].forEach(([v,lbl])=>dayRow.appendChild(h("button",{style:{padding:"5px 10px",borderRadius:"6px",border:`1px solid ${a.dueToday===v?"#E8FF47":"#252540"}`,fontSize:"12px",background:a.dueToday===v?"#E8FF4718":"transparent",color:a.dueToday===v?"#E8FF47":"#666",whiteSpace:"nowrap"},onClick:()=>setState({add:{...state.add,dueToday:v}})},lbl)));
+  [[true,t().dueToday],[false,t().backlogTab]].forEach(([v,lbl])=>dayRow.appendChild(h("button",{style:{padding:"5px 10px",borderRadius:"6px",border:`1px solid ${a.dueToday===v?"#E8FF47":"#252540"}`,fontSize:"12px",background:a.dueToday===v?"#E8FF4718":"transparent",color:a.dueToday===v?"#E8FF47":"#666",whiteSpace:"nowrap"},onClick:()=>setState({add:{...state.add,dueToday:v}})},lbl)));
   modal.appendChild(dayRow);
   modal.appendChild(h("button",{style:{background:"#E8FF47",color:"#0a0a14",border:"none",borderRadius:"10px",padding:"13px 24px",fontSize:"14px",fontWeight:"700",marginTop:"20px",width:"100%"},onClick:submitAdd},"Добавить"));
   ov.appendChild(modal);
@@ -1062,7 +1159,7 @@ function buildDumpModal(){
       const inf=h("div",{style:{flex:"1"}});
       inf.appendChild(h("div",{style:{fontSize:"14px",color:"#f0f0e8",fontWeight:"500"}},t.title));
       const tgs=h("div",{style:{display:"flex",gap:"8px",marginTop:"5px",flexWrap:"wrap"}});
-      tgs.append(h("span",{style:{fontSize:"11px",color:cat.color}},cat.icon+" "+cat.label),h("span",{style:{fontSize:"11px",color:pri.color}},pri.dot+" "+pri.label),h("span",{style:{fontSize:"11px",color:t.dueToday?"#E8FF47":"#555"}},t.dueToday?"📌 Сегодня":"📋 Бэклог"));
+      tgs.append(h("span",{style:{fontSize:"11px",color:cat.color}},cat.icon+" "+cat.label),h("span",{style:{fontSize:"11px",color:pri.color}},pri.dot+" "+pri.label),h("span",{style:{fontSize:"11px",color:t.dueToday?"#E8FF47":"#555"}},t.dueToday?t().dueToday:t().backlogTab));
       inf.appendChild(tgs);
       if(t.why) inf.appendChild(h("div",{style:{fontSize:"12px",color:"#555",marginTop:"4px",fontStyle:"italic"}},`"${t.why}"`));
       if(t.steps?.length) inf.appendChild(h("div",{style:{fontSize:"11px",color:"#3a3a5a",marginTop:"4px"}},"+ "+t.steps.length+" шагов"));
@@ -1071,7 +1168,7 @@ function buildDumpModal(){
     });
     const btns=h("div",{style:{display:"flex",gap:"10px",marginTop:"20px"}});
     btns.append(
-      h("button",{style:{background:"transparent",border:"1px solid #252540",borderRadius:"10px",padding:"13px 24px",fontSize:"14px",fontWeight:"700",color:"#666",flex:"1"},onClick:()=>setDump({phase:"idle",result:null})},"← Переделать"),
+      h("button",{style:{background:"transparent",border:"1px solid #252540",borderRadius:"10px",padding:"13px 24px",fontSize:"14px",fontWeight:"700",color:"#666",flex:"1"},onClick:()=>setDump({phase:"idle",result:null})},t().redo),
       h("button",{style:{background:"#E8FF47",color:"#0a0a14",border:"none",borderRadius:"10px",padding:"13px 24px",fontSize:"14px",fontWeight:"700",flex:"2",opacity:d.selected.size>0?"1":"0.3"},onClick:addSelectedTasks},"Добавить "+(d.selected.size>0?d.selected.size+" задач →":"→"))
     );
     modal.appendChild(btns);
@@ -1093,24 +1190,24 @@ function renderLogin(){
   const logo = h("div",{style:{textAlign:"center"}});
   logo.appendChild(h("div",{style:{fontFamily:"'Archivo Black',sans-serif",fontSize:"36px",letterSpacing:"-1px",color:"#f0f0e8"}},"Focus","OS".fontcolor("#E8FF47")));
   logo.innerHTML = `<div style="font-family:'Archivo Black',sans-serif;font-size:36px;letter-spacing:-1px;color:#f0f0e8">Focus<span style="color:#E8FF47">OS</span></div>`;
-  logo.appendChild(h("div",{style:{color:"#444",fontSize:"14px",marginTop:"8px",fontFamily:"monospace",letterSpacing:"1px"}},"ТВОЙ AI-ПЛАНИРОВЩИК"));
+  logo.appendChild(h("div",{style:{color:"#444",fontSize:"14px",marginTop:"8px",fontFamily:"monospace",letterSpacing:"1px"}},t().login.tagline));
 
   const card = h("div",{style:{background:"#0f0f1e",border:"1px solid #1a1a2e",borderRadius:"20px",padding:"36px 32px",maxWidth:"360px",width:"100%",textAlign:"center",display:"flex",flexDirection:"column",gap:"20px"}});
   card.appendChild(h("div",{style:{fontSize:"32px"}},"🔐"));
-  card.appendChild(h("div",{style:{color:"#f0f0e8",fontSize:"18px",fontWeight:"600",fontFamily:"'Archivo Black',sans-serif"}},"Войди чтобы начать"));
-  card.appendChild(h("div",{style:{color:"#555",fontSize:"13px",lineHeight:"1.6"}},"Все твои задачи синхронизируются на всех устройствах"));
+  card.appendChild(h("div",{style:{color:"#f0f0e8",fontSize:"18px",fontWeight:"600",fontFamily:"'Archivo Black',sans-serif"}},t().login.title));
+  card.appendChild(h("div",{style:{color:"#555",fontSize:"13px",lineHeight:"1.6"}},t().login.sub));
 
   const btnGoogle = h("button",{
     style:{background:"#fff",color:"#3c4043",border:"1px solid #dadce0",borderRadius:"12px",padding:"15px 24px",fontSize:"15px",fontWeight:"600",display:"flex",alignItems:"center",justifyContent:"center",gap:"10px",cursor:"pointer",width:"100%"},
     onClick: ()=>supa.auth.signInWithOAuth({provider:"google",options:{redirectTo:APP_URL}})
   });
-  btnGoogle.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>Войти через Google`;
+  btnGoogle.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>${t().login.google}`;
 
   const btnGitHub = h("button",{
     style:{background:"#1a1a2e",color:"#f0f0e8",border:"1px solid #2a2a40",borderRadius:"12px",padding:"15px 24px",fontSize:"15px",fontWeight:"600",display:"flex",alignItems:"center",justifyContent:"center",gap:"10px",cursor:"pointer",width:"100%"},
     onClick: signInWithGitHub
   });
-  btnGitHub.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>Войти через GitHub`;
+  btnGitHub.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>${t().login.github}`;
 
   const divider = h("div",{style:{display:"flex",alignItems:"center",gap:"10px",color:"#333",fontSize:"12px",fontFamily:"monospace"}});
   divider.innerHTML = `<div style="flex:1;height:1px;background:#1a1a2e"></div>или<div style="flex:1;height:1px;background:#1a1a2e"></div>`;
@@ -1118,7 +1215,7 @@ function renderLogin(){
   card.appendChild(btnGoogle);
   card.appendChild(divider);
   card.appendChild(btnGitHub);
-  card.appendChild(h("div",{style:{color:"#333",fontSize:"11px",fontFamily:"monospace"}},"Данные хранятся в твоём аккаунте • Бесплатно"));
+  card.appendChild(h("div",{style:{color:"#333",fontSize:"11px",fontFamily:"monospace"}},t().login.footer));
 
   wrap.appendChild(logo);
   wrap.appendChild(card);
