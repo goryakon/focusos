@@ -1,7 +1,5 @@
-const CACHE = 'focusos-v3';
+const CACHE = 'focusos-v5';
 const ASSETS = [
-  '/',
-  '/index.html',
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png',
@@ -24,13 +22,18 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // Network first for API calls, cache first for everything else
-  if (e.request.url.includes('anthropic.com') || e.request.url.includes('googleapis.com/css')) {
-    e.respondWith(
-      fetch(e.request).catch(() => caches.match(e.request))
-    );
+  const url = new URL(e.request.url);
+  // index.html — always network first, never cache
+  if (url.pathname === '/' || url.pathname === '/index.html') {
+    e.respondWith(fetch(e.request).catch(() => caches.match('/index.html')));
     return;
   }
+  // API calls — network only
+  if (url.hostname.includes('anthropic') || url.pathname.startsWith('/api/')) {
+    e.respondWith(fetch(e.request));
+    return;
+  }
+  // Everything else — cache first
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request).then(response => {
       const clone = response.clone();

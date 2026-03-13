@@ -1185,7 +1185,14 @@ function buildOverlay(onClick){
 // ── LOGIN SCREEN ──────────────────────────────────────────────────────────
 function renderLogin(){
   const app = document.getElementById("app");
-  const wrap = h("div",{style:{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"32px",gap:"32px"}});
+  const wrap = h("div",{style:{minHeight:"100vh",position:"relative",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"32px",gap:"32px"}});
+
+  // Lang switcher
+  const langBtn = h("button",{
+    style:{position:"absolute",top:"20px",right:"20px",background:"transparent",border:"1px solid #252540",borderRadius:"20px",padding:"5px 12px",fontSize:"12px",color:"#555",fontFamily:"monospace",cursor:"pointer"},
+    onClick:()=>setLang(_lang==="ru"?"en":"ru")
+  }, _lang==="ru"?"EN":"RU");
+  wrap.appendChild(langBtn);
 
   const logo = h("div",{style:{textAlign:"center"}});
   logo.appendChild(h("div",{style:{fontFamily:"'Archivo Black',sans-serif",fontSize:"36px",letterSpacing:"-1px",color:"#f0f0e8"}},"Focus","OS".fontcolor("#E8FF47")));
