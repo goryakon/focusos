@@ -88,7 +88,32 @@ const TRANSLATIONS = {
 };
 
 function i18n(){ return TRANSLATIONS[_lang]; }
-function setLang(l){ _lang=l; localStorage.setItem("fo_lang",l); render(); }
+function setLang(l){ _lang=l; localStorage.setItem("fo_lang",l); if(_currentUser) render(); else renderLogin(); }
+
+function buildLangSwitcher(){
+  const wrap = h("div",{style:{position:"relative",display:"inline-block"}});
+  const btn = h("button",{
+    style:{background:"transparent",border:"1px solid #252540",borderRadius:"20px",padding:"5px 12px",fontSize:"11px",color:"#666",fontFamily:"monospace",cursor:"pointer",letterSpacing:"0.5px",display:"flex",alignItems:"center",gap:"4px"},
+    onClick:(e)=>{
+      e.stopPropagation();
+      const existing = document.getElementById("lang-dropdown");
+      if(existing){existing.remove();return;}
+      const dd = h("div",{id:"lang-dropdown",style:{position:"absolute",top:"110%",right:"0",background:"#0f0f1e",border:"1px solid #252540",borderRadius:"10px",overflow:"hidden",zIndex:"999",minWidth:"80px",boxShadow:"0 8px 24px #00000080"}});
+      [["en","EN — English"],["ru","RU — Русский"]].forEach(([code,label])=>{
+        const opt = h("button",{
+          style:{display:"block",width:"100%",padding:"9px 14px",background:_lang===code?"#E8FF4715":"transparent",border:"none",color:_lang===code?"#E8FF47":"#888",fontSize:"11px",fontFamily:"monospace",cursor:"pointer",textAlign:"left",letterSpacing:"0.5px"},
+          onClick:(e)=>{e.stopPropagation();dd.remove();setLang(code);}
+        },label);
+        dd.appendChild(opt);
+      });
+      wrap.appendChild(dd);
+      setTimeout(()=>document.addEventListener("click",()=>dd.remove(),{once:true}),0);
+    }
+  });
+  btn.innerHTML = `${_lang.toUpperCase()} <span style="opacity:0.4;font-size:9px">▾</span>`;
+  wrap.appendChild(btn);
+  return wrap;
+}
 
 const CATEGORIES = {
   work:     {get label(){return i18n().categories.work},     color:"#4ECDC4", icon:"⚡"},
@@ -526,7 +551,7 @@ function buildApp(){
   logoWrap.appendChild(h("div",{style:{fontFamily:"'Archivo Black',sans-serif",fontSize:"21px",letterSpacing:"-0.5px"}},"FOCUS",h("span",{style:{color:"#E8FF47"}},"OS")));
   logoWrap.appendChild(h("div",{style:{fontSize:"10px",color:"#3a3a50",fontFamily:"monospace",marginTop:"2px",letterSpacing:"0.5px"}},new Date().toLocaleDateString(i18n().locale,{weekday:"long",day:"numeric",month:"long"}).toUpperCase()));
   const hdrR=h("div",{style:{display:"flex",gap:"8px",alignItems:"center"}});
-  hdrR.appendChild(h("button",{style:{background:"transparent",border:"1px solid #1a1a2e",borderRadius:"20px",padding:"4px 10px",fontSize:"11px",color:"#555",fontFamily:"monospace",cursor:"pointer",letterSpacing:"0.5px"},onClick:()=>setLang(_lang==="ru"?"en":"ru")},_lang==="ru"?"EN":"RU"));
+  hdrR.appendChild(buildLangSwitcher());
   hdrR.appendChild(h("button",{style:{background:"#FF6B6B12",border:"1px solid #FF6B6B35",borderRadius:"8px",padding:"7px 13px",color:"#FF6B6B",fontSize:"12px",fontFamily:"monospace"},onClick:()=>setState({modal:"dump"})},i18n().brainDump));
   if(energy) hdrR.appendChild(h("div",{style:{fontSize:"18px",cursor:"pointer"},onClick:()=>setState({energy:null})},ENERGY_LEVELS.find(e=>e.value===energy)?.emoji||""));
   // User avatar + logout
@@ -1143,11 +1168,11 @@ function renderLogin(){
   const wrap = h("div",{style:{minHeight:"100vh",position:"relative",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"32px",gap:"32px"}});
 
   // Lang switcher
-  const langBtn = h("button",{
-    style:{position:"absolute",top:"20px",right:"20px",background:"transparent",border:"1px solid #252540",borderRadius:"20px",padding:"5px 12px",fontSize:"12px",color:"#555",fontFamily:"monospace",cursor:"pointer"},
-    onClick:()=>setLang(_lang==="ru"?"en":"ru")
-  }, _lang==="ru"?"EN":"RU");
-  wrap.appendChild(langBtn);
+  const langSwitcherWrap = buildLangSwitcher();
+  langSwitcherWrap.style.position = "absolute";
+  langSwitcherWrap.style.top = "20px";
+  langSwitcherWrap.style.right = "20px";
+  wrap.appendChild(langSwitcherWrap);
 
   const logo = h("div",{style:{textAlign:"center"}});
   logo.appendChild(h("div",{style:{fontFamily:"'Archivo Black',sans-serif",fontSize:"36px",letterSpacing:"-1px",color:"#f0f0e8"}},"Focus","OS".fontcolor("#E8FF47")));
