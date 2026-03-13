@@ -63,6 +63,23 @@ const TRANSLATIONS = {
     noTasks:"Не знаешь с чего начать?", noTasksSub:"Расскажи голосом всё что в голове — AI составит список",
     startDump:"🎙 Начать Brain Dump", recording:"● Запись...", stopRec:"■ Стоп",
     locale:"ru-RU", confirmSignout:"Выйти из аккаунта?",
+    startBtn:"Начать →",
+    morningCheckin:i18n().morningCheckin, progressDay:i18n().progressDay,
+    lowEnergy:"🪫 НИЗКАЯ ЭНЕРГИЯ — НАЧНИ С ЛЁГКОГО", nextFocus:"⚡ СЛЕДУЮЩИЙ ФОКУС",
+    steps:i18n().steps, stepsOf:"шагов", notes:i18n().notes, materials:i18n().materials,
+    analyze2:i18n().analyze2, analyzeAI:i18n().analyzeAI,
+    addStep:i18n().addStep, addStepBtn:i18n().addStepBtn,
+    addNote:i18n().addNote, addNoteBtn:i18n().addNoteBtn,
+    linkPlaceholder:i18n().linkPlaceholder, addLink:i18n().addLink,
+    attachFile:i18n().attachFile,
+    brainDumpDesc:"Говори вслух всё что висит в голове — задачи, идеи, беспокойства, дедлайны. Не думай о структуре. AI сам разберёт.",
+    pressSpeak:"нажми и говори", recStop:"● REC — нажми чтобы остановить",
+    typeText:"Или напиши текстом...",
+    dumpSummary:i18n().dumpSummary, dumpInsight:i18n().dumpInsight,
+    dumpFound:"НАЙДЕНО", dumpFoundSuffix:"ЗАДАЧ — выбери что добавить:",
+    dumpStepsCount:"шагов", suggestedSteps:i18n().suggestedSteps,
+    addedSteps:"✓ Добавлено", startThis:i18n().startThis,
+    openTask:i18n().openTask,
   },
   en: {
     categories: {work:"Work",personal:"Personal",learning:"Learning",home:"Home"},
@@ -84,6 +101,23 @@ const TRANSLATIONS = {
     noTasks:"Not sure where to start?", noTasksSub:"Tell the AI everything on your mind — it'll build your task list",
     startDump:"🎙 Start Brain Dump", recording:"● Recording...", stopRec:"■ Stop",
     locale:"en-US", confirmSignout:"Sign out?",
+    startBtn:"Start →",
+    morningCheckin:"MORNING CHECK-IN", progressDay:"DAY PROGRESS",
+    lowEnergy:"🪫 LOW ENERGY — START EASY", nextFocus:"⚡ NEXT FOCUS",
+    steps:"STEPS", stepsOf:"steps", notes:"💬 NOTES", materials:"📎 MATERIALS",
+    analyze2:"✨ Analyze", analyzeAI:"Analyze with AI →",
+    addStep:"+ New step...", addStepBtn:"+ Add",
+    addNote:"Add a note...", addNoteBtn:"+Add",
+    linkPlaceholder:"Paste a link (https://...)", addLink:"+ Link",
+    attachFile:"📎 Attach file (max 5MB)",
+    brainDumpDesc:"Say out loud everything on your mind — tasks, ideas, worries, deadlines. Don't think about structure. AI will sort it out.",
+    pressSpeak:"tap and speak", recStop:"● REC — tap to stop",
+    typeText:"Or type it out...",
+    dumpSummary:"SUMMARY", dumpInsight:"🔍 INSIGHT",
+    dumpFound:"FOUND", dumpFoundSuffix:"TASKS — pick what to add:",
+    dumpStepsCount:"steps", suggestedSteps:"SUGGESTED STEPS — pick what to add:",
+    addedSteps:"✓ Added", startThis:"🚀 START WITH THIS (2–5 MIN)",
+    openTask:"Open task fully ⚡",
   }
 };
 
@@ -745,7 +779,7 @@ function buildTaskCard(task){
     });
 
     // Open full button
-    const openBtn=h("button",{style:{marginTop:"10px",background:"transparent",border:"1px solid #1e1e2e",borderRadius:"7px",padding:"6px 14px",fontSize:"12px",color:"#888",width:"100%"},onClick:(e)=>{e.stopPropagation();openFocus(task)}},"Открыть задачу полностью ⚡");
+    const openBtn=h("button",{style:{marginTop:"10px",background:"transparent",border:"1px solid #1e1e2e",borderRadius:"7px",padding:"6px 14px",fontSize:"12px",color:"#888",width:"100%"},onClick:(e)=>{e.stopPropagation();openFocus(task)}},i18n().openTask);
     expSec.appendChild(openBtn);
     card.appendChild(expSec);
   }
