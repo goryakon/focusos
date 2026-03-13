@@ -549,7 +549,16 @@ function buildApp(){
   const hdr=h("div",{style:{padding:"18px 20px 14px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid #0f0f1e",position:"sticky",top:"0",background:"#0a0a14",zIndex:"10"}});
   const logoWrap=h("div",{});
   logoWrap.appendChild(h("div",{style:{fontFamily:"'Archivo Black',sans-serif",fontSize:"21px",letterSpacing:"-0.5px"}},"FOCUS",h("span",{style:{color:"#E8FF47"}},"OS")));
-  logoWrap.appendChild(h("div",{style:{fontSize:"10px",color:"#3a3a50",fontFamily:"monospace",marginTop:"2px",letterSpacing:"0.5px"}},new Date().toLocaleDateString(i18n().locale,{weekday:"long",day:"numeric",month:"long"}).toUpperCase()));
+  const dateTimeEl = h("div",{style:{fontSize:"10px",color:"#3a3a50",fontFamily:"monospace",marginTop:"2px",letterSpacing:"0.5px"}});
+  function updateClock(){
+    const now = new Date();
+    const date = now.toLocaleDateString(i18n().locale,{weekday:"long",day:"numeric",month:"long"}).toUpperCase();
+    const time = now.toLocaleTimeString(i18n().locale,{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+    dateTimeEl.textContent = date + "  •  " + time;
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+  logoWrap.appendChild(dateTimeEl);
   const hdrR=h("div",{style:{display:"flex",gap:"8px",alignItems:"center"}});
   hdrR.appendChild(buildLangSwitcher());
   hdrR.appendChild(h("button",{style:{background:"#FF6B6B12",border:"1px solid #FF6B6B35",borderRadius:"8px",padding:"7px 13px",color:"#FF6B6B",fontSize:"12px",fontFamily:"monospace"},onClick:()=>setState({modal:"dump"})},i18n().brainDump));
