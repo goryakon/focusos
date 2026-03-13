@@ -39,6 +39,57 @@ button{font-family:'DM Sans',sans-serif;cursor:pointer}
 <script>
 
 
+// ── i18n (must come first) ────────────────────────────────────────────────
+let _lang = localStorage.getItem("fo_lang") || "en";
+
+const TRANSLATIONS = {
+  ru: {
+    categories: {work:"Работа",personal:"Личное",learning:"Обучение",home:"Быт"},
+    priorities: {high:"Важно",medium:"Среднее",low:"Потом"},
+    energy: ["Еле живой","Так себе","Нормально","Бодрый","На пике"],
+    today:"Сегодня", yesterday:"Вчера",
+    tabs: {today:"Сегодня",backlog:"Бэклог",done:"✅ Выполнено"},
+    empty: {today:"Задач нет", todaySub:"Добавь задачу или сделай Brain Dump", backlog:"Бэклог пуст", done:"Пока нет выполненных задач"},
+    login: {title:"Войди чтобы начать", sub:"Все твои задачи синхронизируются на всех устройствах", google:"Войти через Google", github:"Войти через GitHub", footer:"Данные хранятся в твоём аккаунте • Бесплатно", tagline:"ТВОЙ AI-ПЛАНИРОВЩИК"},
+    signout:"выйти", brainDump:"🧠 Brain Dump", focusMode:"⚡ РЕЖИМ ФОКУСА", newTask:"НОВАЯ ЗАДАЧА",
+    addTask:"Добавить задачу", addTaskBtn:"+ Задача",
+    titlePlaceholder:"Что нужно сделать?", whyPlaceholder:"Зачем это важно? (необязательно)",
+    dueToday:"📌 Сегодня", backlogTab:"📋 Бэклог", save:"Сохранить", cancel:"Отмена",
+    brainDumpTitle:"Выгрузи всё из головы", brainDumpReview:"Вот что я нашёл:",
+    analyze:"🔍 Анализировать", addSelected:"Добавить", redo:"← Переделать",
+    startDay:"Начать день →", energyQ:"Как твой уровень энергии прямо сейчас?",
+    whyBlock:"🧠 ПОЧЕМУ ПРОКРАСТИНИРУЕШЬ", aiSteps:"✨ AI-шаги", addSteps:"Добавить выбранные шаги",
+    complete:"Завершить задачу ✓", startFocus:"⚡ Войти в фокус",
+    noTasks:"Не знаешь с чего начать?", noTasksSub:"Расскажи голосом всё что в голове — AI составит список",
+    startDump:"🎙 Начать Brain Dump", recording:"● Запись...", stopRec:"■ Стоп",
+    locale:"ru-RU", confirmSignout:"Выйти из аккаунта?",
+  },
+  en: {
+    categories: {work:"Work",personal:"Personal",learning:"Learning",home:"Home"},
+    priorities: {high:"High",medium:"Medium",low:"Low"},
+    energy: ["Dead tired","So-so","Okay","Energized","On fire"],
+    today:"Today", yesterday:"Yesterday",
+    tabs: {today:"Today",backlog:"Backlog",done:"✅ Done"},
+    empty: {today:"No tasks yet", todaySub:"Add a task or try Brain Dump", backlog:"Backlog is empty", done:"No completed tasks yet"},
+    login: {title:"Sign in to get started", sub:"Your tasks sync across all your devices", google:"Continue with Google", github:"Continue with GitHub", footer:"Data stored in your account • Free", tagline:"YOUR AI PLANNER"},
+    signout:"sign out", brainDump:"🧠 Brain Dump", focusMode:"⚡ FOCUS MODE", newTask:"NEW TASK",
+    addTask:"Add task", addTaskBtn:"+ Task",
+    titlePlaceholder:"What needs to be done?", whyPlaceholder:"Why does this matter? (optional)",
+    dueToday:"📌 Today", backlogTab:"📋 Backlog", save:"Save", cancel:"Cancel",
+    brainDumpTitle:"Empty your mind", brainDumpReview:"Here's what I found:",
+    analyze:"🔍 Analyze", addSelected:"Add", redo:"← Redo",
+    startDay:"Start the day →", energyQ:"How's your energy level right now?",
+    whyBlock:"🧠 WHY YOU'RE PROCRASTINATING", aiSteps:"✨ AI steps", addSteps:"Add selected steps",
+    complete:"Complete task ✓", startFocus:"⚡ Enter focus",
+    noTasks:"Not sure where to start?", noTasksSub:"Tell the AI everything on your mind — it'll build your task list",
+    startDump:"🎙 Start Brain Dump", recording:"● Recording...", stopRec:"■ Stop",
+    locale:"en-US", confirmSignout:"Sign out?",
+  }
+};
+
+function i18n(){ return TRANSLATIONS[_lang]; }
+function setLang(l){ _lang=l; localStorage.setItem("fo_lang",l); render(); }
+
 const CATEGORIES = {
   work:     {get label(){return i18n().categories.work},     color:"#4ECDC4", icon:"⚡"},
   personal: {get label(){return i18n().categories.personal}, color:"#FF6B6B", icon:"🎯"},
@@ -57,102 +108,6 @@ const ENERGY_LEVELS = [
   {value:4, get label(){return i18n().energy[3]}, emoji:"💪"},
   {value:5, get label(){return i18n().energy[4]}, emoji:"🔥"},
 ];
-
-// ── i18n ───────────────────────────────────────────────────────────────────
-const TRANSLATIONS = {
-  ru: {
-    categories: {work:"Работа",personal:"Личное",learning:"Обучение",home:"Быт"},
-    priorities: {high:"Важно",medium:"Среднее",low:"Потом"},
-    energy: ["Еле живой","Так себе","Нормально","Бодрый","На пике"],
-    today:"Сегодня", yesterday:"Вчера",
-    tabs: {today:"Сегодня",backlog:"Бэклог",done:"✅ Выполнено"},
-    empty: {
-      today:"Задач нет", todaySub:"Добавь задачу или сделай Brain Dump",
-      backlog:i18n().empty.backlog, done:i18n().empty.done
-    },
-    login: {
-      title:i18n().login.title,
-      sub:i18n().login.sub,
-      google:"Войти через Google", github:"Войти через GitHub",
-      footer:i18n().login.footer,
-      tagline:i18n().login.tagline
-    },
-    signout:i18n().signout,
-    brainDump:"🧠 Brain Dump",
-    focusMode:i18n().focusMode,
-    newTask:i18n().newTask,
-    addTask:"Добавить задачу",
-    addTaskBtn:"+ Задача",
-    titlePlaceholder:"Что нужно сделать?",
-    whyPlaceholder:"Зачем это важно? (необязательно)",
-    dueToday:"📌 Сегодня", backlogTab:"📋 Бэклог",
-    save:"Сохранить", cancel:"Отмена",
-    brainDumpTitle:"Выгрузи всё из голоы", brainDumpReview:"Вот что я нашёл:",
-    analyze:"🔍 Анализировать",
-    addSelected:"Добавить", redo:i18n().redo,
-    startDay:i18n().startDay,
-    energyQ:"Как твой уровень энергии прямо сейчас?",
-    whyBlock:"🧠 ПОЧЕМУ ПРОКРАСТИНИРУЕШЬ",
-    aiSteps:"✨ AI-шаги",
-    addSteps:"Добавить выбранные шаги",
-    complete:"Завершить задачу ✓",
-    startFocus:"⚡ Войти в фокус",
-    noTasks:i18n().noTasks,
-    noTasksSub:i18n().noTasksSub,
-    startDump:i18n().startDump,
-    recording:"● Запись...", stopRec:"■ Стоп",
-    locale:"ru-RU",
-    confirmSignout:i18n().confirmSignout,
-  },
-  en: {
-    categories: {work:"Work",personal:"Personal",learning:"Learning",home:"Home"},
-    priorities: {high:"High",medium:"Medium",low:"Low"},
-    energy: ["Dead tired","So-so","Okay","Energized","On fire"],
-    today:"Today", yesterday:"Yesterday",
-    tabs: {today:"Today",backlog:"Backlog",done:"✅ Done"},
-    empty: {
-      today:"No tasks yet", todaySub:"Add a task or try Brain Dump",
-      backlog:"Backlog is empty", done:"No completed tasks yet"
-    },
-    login: {
-      title:"Sign in to get started",
-      sub:"Your tasks sync across all your devices",
-      google:"Continue with Google", github:"Continue with GitHub",
-      footer:"Data stored in your account • Free",
-      tagline:"YOUR AI PLANNER"
-    },
-    signout:"sign out",
-    brainDump:"🧠 Brain Dump",
-    focusMode:"⚡ FOCUS MODE",
-    newTask:"NEW TASK",
-    addTask:"Add task",
-    addTaskBtn:"+ Task",
-    titlePlaceholder:"What needs to be done?",
-    whyPlaceholder:"Why does this matter? (optional)",
-    dueToday:"📌 Today", backlogTab:"📋 Backlog",
-    save:"Save", cancel:"Cancel",
-    brainDumpTitle:"Empty your mind", brainDumpReview:"Here's what I found:",
-    analyze:"🔍 Analyze",
-    addSelected:"Add", redo:"← Redo",
-    startDay:"Start the day →",
-    energyQ:"How's your energy level right now?",
-    whyBlock:"🧠 WHY YOU'RE PROCRASTINATING",
-    aiSteps:"✨ AI steps",
-    addSteps:"Add selected steps",
-    complete:"Complete task ✓",
-    startFocus:"⚡ Enter focus",
-    noTasks:"Not sure where to start?",
-    noTasksSub:"Tell the AI everything on your mind — it'll build your task list",
-    startDump:"🎙 Start Brain Dump",
-    recording:"● Recording...", stopRec:"■ Stop",
-    locale:"en-US",
-    confirmSignout:"Sign out?",
-  }
-};
-
-let _lang = localStorage.getItem("fo_lang") || "en";
-function i18n(){ return TRANSLATIONS[_lang]; }
-function setLang(l){ _lang=l; localStorage.setItem("fo_lang",l); render(); }
 
 // ── UTILS ──────────────────────────────────────────────────────────────────
 function genId(){return Math.random().toString(36).slice(2,9)}
