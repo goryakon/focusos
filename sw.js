@@ -1,4 +1,4 @@
-const CACHE = 'focusos-v5';
+const CACHE = 'focusos-v6';
 const ASSETS = [
   '/manifest.json',
   '/icon-192.png',
@@ -28,12 +28,13 @@ self.addEventListener('fetch', e => {
     e.respondWith(fetch(e.request).catch(() => caches.match('/index.html')));
     return;
   }
-  // API calls — network only
-  if (url.hostname.includes('anthropic') || url.pathname.startsWith('/api/')) {
+  // API calls and external services — network only
+  if (url.hostname.includes('anthropic') || url.pathname.startsWith('/api/') ||
+      url.hostname.includes('supabase.co') || e.request.method !== 'GET') {
     e.respondWith(fetch(e.request));
     return;
   }
-  // Everything else — cache first
+  // Everything else (GET only) — cache first
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request).then(response => {
       const clone = response.clone();

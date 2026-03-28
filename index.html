@@ -229,7 +229,7 @@ async function loadUserData(){
 
 // Сохранение всех данных (дебаунс 1.5с)
 let _saveStatus = "saved"; // "saving" | "saved" | "error"
-let _lastPushedAt = null;  // для защиты от real-time loop
+let _ignoreNextUpdate = false; // защита от real-time loop
 let _realtimeChannel = null;
 function setSaveStatus(s){ _saveStatus=s; const el=document.getElementById("save-status"); if(el) renderSaveStatus(el); }
 function renderSaveStatus(el){
@@ -246,19 +246,18 @@ function scheduleSave(){
 
 async function pushUserData(retries=3){
   if(!_currentUser) return;
-  const ts = new Date().toISOString();
   const payload = {
     user_id: _currentUser.id,
     tasks: loadTasksLocal(),
     energy: JSON.parse(localStorage.getItem("fo_energy")||"{}"),
-    updated_at: ts
   };
+  _ignoreNextUpdate = true;
   try {
     const {error} = await supa.from("user_data").upsert(payload, {onConflict:"user_id"});
     if(error) throw error;
-    _lastPushedAt = ts;
     setSaveStatus("saved");
   } catch(e) {
+    _ignoreNextUpdate = false;
     if(retries > 0) {
       await new Promise(r=>setTimeout(r, 2000));
       return pushUserData(retries-1);
@@ -282,7 +281,7 @@ function subscribeRealtime(){
     }, (payload)=>{
       const incoming = payload.new;
       // Пропускаем собственные сохранения (защита от loop)
-      if(incoming.updated_at === _lastPushedAt) return;
+      if(_ignoreNextUpdate){ _ignoreNextUpdate=false; return; }
       // Применяем данные от другого устройства
       const tasks = incoming.tasks || [];
       const energy = incoming.energy || {};
