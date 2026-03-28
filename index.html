@@ -253,8 +253,17 @@ async function pushUserData(retries=3){
   };
   _ignoreNextUpdate = true;
   try {
-    const {error} = await supa.from("user_data").upsert(payload, {onConflict:"user_id"});
-    if(error) throw error;
+    // UPDATE existing row
+    const {data, error: upErr} = await supa.from("user_data")
+      .update({tasks: payload.tasks, energy: payload.energy})
+      .eq("user_id", _currentUser.id)
+      .select("user_id");
+    if(upErr) throw upErr;
+    // No row yet → INSERT
+    if(!data?.length){
+      const {error: inErr} = await supa.from("user_data").insert(payload);
+      if(inErr) throw inErr;
+    }
     setSaveStatus("saved");
   } catch(e) {
     _ignoreNextUpdate = false;
