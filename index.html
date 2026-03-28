@@ -222,9 +222,9 @@ async function signOut(){
 // Загрузка данных из Supabase (с fallback на localStorage)
 async function loadUserData(){
   if(!_currentUser) return null;
-  const {data,error} = await supa.from("user_data").select("*").eq("user_id",_currentUser.id).single();
-  if(error || !data) return null;
-  return data;
+  const {data:row,error} = await supa.from("user_data").select("data").eq("user_id",_currentUser.id).single();
+  if(error || !row) return null;
+  return row.data || null; // колонка называется "data", содержит {tasks, energy}
 }
 
 // Сохранение всех данных (дебаунс 1.5с)
@@ -246,22 +246,22 @@ function scheduleSave(){
 
 async function pushUserData(retries=3){
   if(!_currentUser) return;
-  const payload = {
-    user_id: _currentUser.id,
+  const rowData = {
     tasks: loadTasksLocal(),
     energy: JSON.parse(localStorage.getItem("fo_energy")||"{}"),
   };
   _ignoreNextUpdate = true;
   try {
     // UPDATE existing row
-    const {data, error: upErr} = await supa.from("user_data")
-      .update({tasks: payload.tasks, energy: payload.energy})
+    const {data: updated, error: upErr} = await supa.from("user_data")
+      .update({data: rowData, updated_at: new Date().toISOString()})
       .eq("user_id", _currentUser.id)
       .select("user_id");
     if(upErr) throw upErr;
     // No row yet → INSERT
-    if(!data?.length){
-      const {error: inErr} = await supa.from("user_data").insert(payload);
+    if(!updated?.length){
+      const {error: inErr} = await supa.from("user_data")
+        .insert({user_id: _currentUser.id, data: rowData, updated_at: new Date().toISOString()});
       if(inErr) throw inErr;
     }
     setSaveStatus("saved");
@@ -292,8 +292,9 @@ function subscribeRealtime(){
       // Пропускаем собственные сохранения (защита от loop)
       if(_ignoreNextUpdate){ _ignoreNextUpdate=false; return; }
       // Применяем данные от другого устройства
-      const tasks = incoming.tasks || [];
-      const energy = incoming.energy || {};
+      const rowData = incoming.data || {};
+      const tasks = rowData.tasks || [];
+      const energy = rowData.energy || {};
       localStorage.setItem("fo_tasks", JSON.stringify(tasks));
       localStorage.setItem("fo_energy", JSON.stringify(energy));
       state.tasks = tasks;

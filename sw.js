@@ -1,4 +1,4 @@
-const CACHE = 'focusos-v7';
+const CACHE = 'focusos-v8';
 const ASSETS = [
   '/manifest.json',
   '/icon-192.png',
