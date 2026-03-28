@@ -211,6 +211,7 @@ async function signInWithGitHub(){
 }
 
 async function signOut(){
+  unsubscribeRealtime();
   await supa.auth.signOut();
   _currentUser = null;
   localStorage.removeItem("fo_tasks");
@@ -228,6 +229,8 @@ async function loadUserData(){
 
 // Сохранение всех данных (дебаунс 1.5с)
 let _saveStatus = "saved"; // "saving" | "saved" | "error"
+let _lastPushedAt = null;  // для защиты от real-time loop
+let _realtimeChannel = null;
 function setSaveStatus(s){ _saveStatus=s; const el=document.getElementById("save-status"); if(el) renderSaveStatus(el); }
 function renderSaveStatus(el){
   if(_saveStatus==="saving") { el.textContent="↑ saving..."; el.style.color="#555"; }
@@ -243,15 +246,17 @@ function scheduleSave(){
 
 async function pushUserData(retries=3){
   if(!_currentUser) return;
+  const ts = new Date().toISOString();
   const payload = {
     user_id: _currentUser.id,
     tasks: loadTasksLocal(),
     energy: JSON.parse(localStorage.getItem("fo_energy")||"{}"),
-    updated_at: new Date().toISOString()
+    updated_at: ts
   };
   try {
     const {error} = await supa.from("user_data").upsert(payload, {onConflict:"user_id"});
     if(error) throw error;
+    _lastPushedAt = ts;
     setSaveStatus("saved");
   } catch(e) {
     if(retries > 0) {
@@ -262,6 +267,37 @@ async function pushUserData(retries=3){
     // Store pending save flag - will retry on next load
     localStorage.setItem("fo_pending_save","1");
   }
+}
+
+// Real-time sync — слушаем изменения от других устройств
+function subscribeRealtime(){
+  if(!_currentUser || _realtimeChannel) return;
+  _realtimeChannel = supa
+    .channel("user_data:"+_currentUser.id)
+    .on("postgres_changes", {
+      event: "UPDATE",
+      schema: "public",
+      table: "user_data",
+      filter: `user_id=eq.${_currentUser.id}`
+    }, (payload)=>{
+      const incoming = payload.new;
+      // Пропускаем собственные сохранения (защита от loop)
+      if(incoming.updated_at === _lastPushedAt) return;
+      // Применяем данные от другого устройства
+      const tasks = incoming.tasks || [];
+      const energy = incoming.energy || {};
+      localStorage.setItem("fo_tasks", JSON.stringify(tasks));
+      localStorage.setItem("fo_energy", JSON.stringify(energy));
+      state.tasks = tasks;
+      state.energy = (energy.date === todayStr()) ? energy.level : null;
+      setSaveStatus("saved");
+      render();
+    })
+    .subscribe();
+}
+
+function unsubscribeRealtime(){
+  if(_realtimeChannel){ supa.removeChannel(_realtimeChannel); _realtimeChannel=null; }
 }
 
 // localStorage как кэш
@@ -1317,9 +1353,12 @@ window.addEventListener("DOMContentLoaded", async ()=>{
   if(!state.energy) state.modal="energy";
   render();
 
+  // Подписываемся на real-time изменения от других устройств
+  subscribeRealtime();
+
   // Слушаем изменения auth (на случай логаута в другой вкладке)
   supa.auth.onAuthStateChange((event)=>{
-    if(event==="SIGNED_OUT"){ _currentUser=null; renderLogin(); }
+    if(event==="SIGNED_OUT"){ unsubscribeRealtime(); _currentUser=null; renderLogin(); }
   });
 });
 </script>
