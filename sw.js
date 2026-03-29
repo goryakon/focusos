@@ -1,4 +1,4 @@
-const CACHE = 'focusos-v8';
+const CACHE = 'focusos-v9';
 const ASSETS = [
   '/manifest.json',
   '/icon-192.png',
@@ -30,7 +30,8 @@ self.addEventListener('fetch', e => {
   }
   // API calls and external services — network only
   if (url.hostname.includes('anthropic') || url.pathname.startsWith('/api/') ||
-      url.hostname.includes('supabase.co') || e.request.method !== 'GET') {
+      url.hostname.includes('supabase.co') || url.hostname.includes('googleapis.com') ||
+      url.hostname.includes('accounts.google.com') || e.request.method !== 'GET') {
     e.respondWith(fetch(e.request));
     return;
   }

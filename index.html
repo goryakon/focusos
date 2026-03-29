@@ -24,6 +24,7 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#0a0a14;color:#f0f0e8;font-family:'DM Sans',sans-serif;min-height:100vh;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
@@ -83,6 +84,10 @@ var TRANSLATIONS = {
     dumpStepsCount:"шагов", suggestedSteps:"ПРЕДЛОЖЕННЫЕ ШАГИ — выбери что добавить:",
     addedSteps:"✓ Добавлено", startThis:"🚀 НАЧНИ С ЭТОГО (2–5 МИН)",
     openTask:"Открыть задачу полностью ⚡",
+    calConnect:"📅 Кал", calDate:"ДАТА", calTime:"ВРЕМЯ", calDuration:"ДЛИТЕЛЬНОСТЬ",
+    calSave:"Добавить в Calendar", calUpdate:"Обновить",
+    calEvents:"СОБЫТИЯ КАЛЕНДАРЯ", calAddTitle:"В GOOGLE CALENDAR", calEditTitle:"РЕДАКТИРОВАТЬ СОБЫТИЕ",
+    calDisconnect:"Отключить Google Calendar?",
   },
   en: {
     categories: {work:"Work",personal:"Personal",learning:"Learning",home:"Home"},
@@ -121,6 +126,10 @@ var TRANSLATIONS = {
     dumpStepsCount:"steps", suggestedSteps:"SUGGESTED STEPS — pick what to add:",
     addedSteps:"✓ Added", startThis:"🚀 START WITH THIS (2–5 MIN)",
     openTask:"Open task fully ⚡",
+    calConnect:"📅 Cal", calDate:"DATE", calTime:"TIME", calDuration:"DURATION",
+    calSave:"Save to Calendar", calUpdate:"Update",
+    calEvents:"CALENDAR", calAddTitle:"ADD TO CALENDAR", calEditTitle:"EDIT EVENT",
+    calDisconnect:"Disconnect Google Calendar?",
   }
 };
 
@@ -310,6 +319,98 @@ function subscribeRealtime(){
 
 function unsubscribeRealtime(){
   if(_realtimeChannel){ supa.removeChannel(_realtimeChannel); _realtimeChannel=null; }
+}
+
+// ── GOOGLE CALENDAR ────────────────────────────────────────────────────────
+const GCAL_CLIENT_ID = "712906143464-vn97vghbecdj1i8bcsvkk706ad2jt7ke.apps.googleusercontent.com";
+const GCAL_SCOPE = "https://www.googleapis.com/auth/calendar";
+const GCAL_API = "https://www.googleapis.com/calendar/v3";
+let _gcalToken = localStorage.getItem("fo_gcal_token") || null;
+let _gcalTokenExpiry = parseInt(localStorage.getItem("fo_gcal_token_expiry")||"0");
+let _gcalCalendarId = localStorage.getItem("fo_gcal_calendar_id") || null;
+let _gcalEvents = [];
+let _gcalTokenClient = null;
+let _calModalData = null;
+
+function gcalIsConnected(){
+  return !!(_gcalToken && Date.now() < _gcalTokenExpiry);
+}
+
+function gcalConnect(){
+  if(!window.google?.accounts?.oauth2){ alert("Google library not loaded yet. Please wait a moment and try again."); return; }
+  if(!_gcalTokenClient){
+    _gcalTokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: GCAL_CLIENT_ID,
+      scope: GCAL_SCOPE,
+      callback: async (resp) => {
+        if(resp.error){ console.error("GCal OAuth:",resp.error); return; }
+        _gcalToken = resp.access_token;
+        _gcalTokenExpiry = Date.now() + (resp.expires_in - 60) * 1000;
+        localStorage.setItem("fo_gcal_token", _gcalToken);
+        localStorage.setItem("fo_gcal_token_expiry", String(_gcalTokenExpiry));
+        try{ await gcalGetOrCreateCalendar(); await gcalFetchEvents(); } catch(e){ console.error("GCal init:",e); }
+        render();
+      }
+    });
+  }
+  _gcalTokenClient.requestAccessToken();
+}
+
+function gcalDisconnect(){
+  _gcalToken=null; _gcalTokenExpiry=0; _gcalCalendarId=null; _gcalEvents=[];
+  localStorage.removeItem("fo_gcal_token"); localStorage.removeItem("fo_gcal_token_expiry"); localStorage.removeItem("fo_gcal_calendar_id");
+  render();
+}
+
+async function gcalRequest(method, path, body){
+  if(!_gcalToken) throw new Error("not_connected");
+  const resp = await fetch(GCAL_API+path, {
+    method,
+    headers:{"Authorization":"Bearer "+_gcalToken,"Content-Type":"application/json"},
+    body: body ? JSON.stringify(body) : undefined
+  });
+  if(resp.status===401){ gcalDisconnect(); throw new Error("Session expired. Please reconnect Google Calendar."); }
+  if(!resp.ok){ const t=await resp.text(); throw new Error("Google Calendar: "+resp.status+" — "+t.slice(0,120)); }
+  if(resp.status===204) return null;
+  return resp.json();
+}
+
+async function gcalGetOrCreateCalendar(){
+  if(_gcalCalendarId) return _gcalCalendarId;
+  const list = await gcalRequest("GET", "/users/me/calendarList?fields=items(id,summary)");
+  const ex = (list.items||[]).find(c=>c.summary==="FocusOS");
+  if(ex){ _gcalCalendarId=ex.id; localStorage.setItem("fo_gcal_calendar_id",_gcalCalendarId); return _gcalCalendarId; }
+  const cr = await gcalRequest("POST", "/calendars", {summary:"FocusOS", timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone});
+  _gcalCalendarId=cr.id; localStorage.setItem("fo_gcal_calendar_id",_gcalCalendarId);
+  return _gcalCalendarId;
+}
+
+async function gcalFetchEvents(){
+  if(!_gcalToken||!_gcalCalendarId) return;
+  const now=new Date(), later=new Date(now.getTime()+7*864e5);
+  const p=new URLSearchParams({timeMin:now.toISOString(),timeMax:later.toISOString(),singleEvents:"true",orderBy:"startTime",fields:"items(id,summary,start,end)"});
+  const data=await gcalRequest("GET","/calendars/"+encodeURIComponent(_gcalCalendarId)+"/events?"+p);
+  _gcalEvents=(data?.items||[]).map(e=>({id:e.id,title:e.summary||"(no title)",startDT:e.start?.dateTime||e.start?.date,endDT:e.end?.dateTime||e.end?.date}));
+}
+
+async function gcalAddEvent(title,dateStr,timeStr,durationMin){
+  if(!_gcalCalendarId) await gcalGetOrCreateCalendar();
+  const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const s=new Date(dateStr+"T"+timeStr+":00"), e=new Date(s.getTime()+durationMin*60000);
+  const f=d=>d.toISOString().slice(0,-5);
+  return gcalRequest("POST","/calendars/"+encodeURIComponent(_gcalCalendarId)+"/events",{summary:title,start:{dateTime:f(s),timeZone:tz},end:{dateTime:f(e),timeZone:tz}});
+}
+
+async function gcalUpdateEvent(eventId,title,dateStr,timeStr,durationMin){
+  const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const s=new Date(dateStr+"T"+timeStr+":00"), e=new Date(s.getTime()+durationMin*60000);
+  const f=d=>d.toISOString().slice(0,-5);
+  return gcalRequest("PATCH","/calendars/"+encodeURIComponent(_gcalCalendarId)+"/events/"+eventId,{summary:title,start:{dateTime:f(s),timeZone:tz},end:{dateTime:f(e),timeZone:tz}});
+}
+
+async function gcalDeleteCalEvent(eventId){
+  await gcalRequest("DELETE","/calendars/"+encodeURIComponent(_gcalCalendarId)+"/events/"+eventId);
+  _gcalEvents=_gcalEvents.filter(e=>e.id!==eventId);
 }
 
 // localStorage как кэш
@@ -669,7 +770,14 @@ function buildApp(){
   const hdrR=h("div",{style:{display:"flex",gap:"8px",alignItems:"center"}});
   hdrR.appendChild(buildLangSwitcher());
   hdrR.appendChild(h("button",{style:{background:"#FF6B6B12",border:"1px solid #FF6B6B35",borderRadius:"8px",padding:"7px 13px",color:"#FF6B6B",fontSize:"12px",fontFamily:"monospace"},onClick:()=>setState({modal:"dump"})},i18n().brainDump));
-  if(energy) hdrR.appendChild(h("div",{style:{fontSize:"18px",cursor:"pointer"},onClick:()=>setState({energy:null})},ENERGY_LEVELS.find(e=>e.value===energy)?.emoji||""));
+  // Google Calendar connect button
+  if(gcalIsConnected()){
+    hdrR.appendChild(h("button",{style:{background:"#4ECDC420",border:"1px solid #4ECDC440",borderRadius:"8px",padding:"7px 10px",color:"#4ECDC4",fontSize:"16px"},title:"Google Calendar connected. Click to disconnect.",onClick:()=>{ if(confirm(i18n().calDisconnect)) gcalDisconnect(); }},"📅"));
+  } else {
+    hdrR.appendChild(h("button",{style:{background:"transparent",border:"1px solid #252540",borderRadius:"8px",padding:"7px 10px",color:"#555",fontSize:"12px",fontFamily:"monospace"},onClick:()=>gcalConnect()},i18n().calConnect));
+  }
+  // Energy emoji — click to change (bug fix: was clearing energy instead of opening modal)
+  if(energy) hdrR.appendChild(h("div",{style:{fontSize:"18px",cursor:"pointer"},onClick:()=>setState({modal:"energy"})},ENERGY_LEVELS.find(e=>e.value===energy)?.emoji||""));
   // User avatar + logout
   if(_currentUser){
     const avatar = _currentUser.user_metadata?.avatar_url;
@@ -722,11 +830,23 @@ function buildApp(){
     } else {
       sorted.forEach(t=>{const c=buildTaskCard(t);c.className="task-in";cnt.appendChild(c)});
     }
+    // Today's calendar events
+    const todayCalEvts=_gcalEvents.filter(e=>e.startDT&&e.startDT.slice(0,10)===todayStr());
+    if(todayCalEvts.length>0){
+      cnt.appendChild(h("div",{style:{fontSize:"10px",color:"#2a2a40",fontFamily:"monospace",letterSpacing:"0.5px",marginTop:"18px",marginBottom:"8px"}},"📅 "+i18n().calEvents));
+      todayCalEvts.forEach(e=>{const c=buildCalendarEventCard(e);c.className="task-in";cnt.appendChild(c);});
+    }
   } else if(view==="backlog"){
     if(backlog.length===0){
       cnt.appendChild(buildEmpty("📋",i18n().empty.backlog));
     } else {
       backlog.forEach(t=>{const c=buildTaskCard(t);c.className="task-in";cnt.appendChild(c)});
+    }
+    // Upcoming calendar events (tomorrow–7 days)
+    const blCalEvts=_gcalEvents.filter(e=>e.startDT&&e.startDT.slice(0,10)>todayStr());
+    if(blCalEvts.length>0){
+      cnt.appendChild(h("div",{style:{fontSize:"10px",color:"#2a2a40",fontFamily:"monospace",letterSpacing:"0.5px",marginTop:"18px",marginBottom:"8px"}},"📅 "+i18n().calEvents));
+      blCalEvts.forEach(e=>{const c=buildCalendarEventCard(e);c.className="task-in";cnt.appendChild(c);});
     }
   } else if(view==="done"){
     if(doneTasks.length===0){
@@ -755,6 +875,7 @@ function buildApp(){
   else if(modal==="add") root.appendChild(buildAddModal());
   else if(modal==="dump") root.appendChild(buildDumpModal());
   else if(modal==="focus") root.appendChild(buildFocusModal());
+  else if(modal==="cal") root.appendChild(buildCalendarModal());
 
   return root;
 }
@@ -806,6 +927,7 @@ function buildTaskCard(task){
 
   const btns=h("div",{style:{display:"flex",gap:"4px",alignItems:"flex-start",flexShrink:"0"}});
   if(!task.done) btns.appendChild(h("button",{style:{background:"transparent",border:"none",fontSize:"15px",padding:"2px 5px",color:"#666",title:"Открыть полностью"},onClick:(e)=>{e.stopPropagation();openFocus(task)}},"⚡"));
+  if(!task.done&&gcalIsConnected()) btns.appendChild(h("button",{style:{background:"transparent",border:"none",fontSize:"13px",padding:"2px 5px",color:"#4ECDC4",opacity:"0.8",title:"Add to Google Calendar"},onClick:(e)=>{e.stopPropagation();_calModalData={mode:"add",title:task.title,date:todayStr(),time:"09:00",durationMin:60};setState({modal:"cal"});}},"📅"));
   btns.appendChild(h("button",{style:{background:"transparent",border:"none",fontSize:"11px",padding:"2px 5px",color:"#444",opacity:"0.4"},onClick:(e)=>{e.stopPropagation();deleteTask(task.id)}},"✕"));
   row.append(cb,info,btns);
   card.appendChild(row);
@@ -1278,6 +1400,98 @@ function buildOverlay(onClick){
   return h("div",{style:{position:"fixed",inset:"0",background:"#04040ecc",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:"100",padding:"20px"},onClick});
 }
 
+// ── CALENDAR EVENT CARD ────────────────────────────────────────────────────
+function buildCalendarEventCard(ev){
+  const card=h("div",{style:{background:"#0a0f14",border:"1px solid #1a2a30",borderLeft:"3px solid #4ECDC4",borderRadius:"10px",padding:"12px 15px",marginBottom:"8px",display:"flex",alignItems:"center",gap:"10px"}});
+  const info=h("div",{style:{flex:"1"}});
+  const titleRow=h("div",{style:{fontSize:"14px",color:"#e0f0ee",fontWeight:"500",display:"flex",alignItems:"center",gap:"6px"}});
+  titleRow.append(h("span",{style:{color:"#4ECDC4",fontSize:"12px"}},"📅"),document.createTextNode(ev.title));
+  info.appendChild(titleRow);
+  if(ev.startDT){
+    const sd=new Date(ev.startDT);
+    const hh=String(sd.getHours()).padStart(2,"0"), mm=String(sd.getMinutes()).padStart(2,"0");
+    const dStr=sd.toLocaleDateString(i18n().locale,{weekday:"short",day:"numeric",month:"short"});
+    const dur=ev.endDT?Math.round((new Date(ev.endDT)-sd)/60000):null;
+    const timeStr=hh+":"+mm+(dur?" · "+fmtDuration(dur*60000):"");
+    info.appendChild(h("div",{style:{fontSize:"11px",color:"#3a5a5a",fontFamily:"monospace",marginTop:"3px"}},dStr+" · "+timeStr));
+  }
+  card.appendChild(info);
+  const btns=h("div",{style:{display:"flex",gap:"4px"}});
+  btns.appendChild(h("button",{style:{background:"transparent",border:"none",fontSize:"13px",padding:"2px 6px",color:"#4a6a6a",cursor:"pointer"},title:"Edit",onClick:(e)=>{
+    e.stopPropagation();
+    let date=todayStr(), time="09:00", dur=60;
+    if(ev.startDT){ const sd=new Date(ev.startDT); date=sd.toISOString().slice(0,10); time=String(sd.getHours()).padStart(2,"0")+":"+String(sd.getMinutes()).padStart(2,"0"); }
+    if(ev.startDT&&ev.endDT) dur=Math.round((new Date(ev.endDT)-new Date(ev.startDT))/60000)||60;
+    _calModalData={mode:"edit",eventId:ev.id,title:ev.title,date,time,durationMin:dur};
+    setState({modal:"cal"});
+  }},"✏"));
+  btns.appendChild(h("button",{style:{background:"transparent",border:"none",fontSize:"11px",padding:"2px 5px",color:"#444",opacity:"0.4",cursor:"pointer"},onClick:async (e)=>{
+    e.stopPropagation();
+    if(!confirm("Delete this calendar event?")) return;
+    try{ await gcalDeleteCalEvent(ev.id); render(); } catch(ex){ alert("Error: "+ex.message); }
+  }},"✕"));
+  card.appendChild(btns);
+  return card;
+}
+
+// ── CALENDAR MODAL ─────────────────────────────────────────────────────────
+function buildCalendarModal(){
+  const d=_calModalData;
+  if(!d) return h("div",{});
+  const isEdit=d.mode==="edit";
+  const ov=buildOverlay(()=>setState({modal:null}));
+  const modal=h("div",{style:{background:"#0d0d1a",border:"1px solid #181828",borderRadius:"16px",padding:"28px",width:"100%",maxWidth:"400px"},onClick:e=>e.stopPropagation()});
+  const mhdr=h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"20px"}});
+  mhdr.append(
+    h("div",{style:{fontSize:"10px",fontFamily:"monospace",color:"#4ECDC4",letterSpacing:"1.5px"}},isEdit?i18n().calEditTitle:i18n().calAddTitle),
+    h("button",{style:{background:"transparent",border:"none",color:"#444",fontSize:"16px",padding:"4px"},onClick:()=>setState({modal:null})},"✕")
+  );
+  modal.appendChild(mhdr);
+  // Title
+  const tInp=h("input",{value:d.title,style:{width:"100%",background:"#0f0f1e",border:"1px solid #1e1e30",borderRadius:"8px",padding:"11px 13px",color:"#f0f0e8",fontSize:"14px",fontFamily:"'DM Sans',sans-serif",marginBottom:"14px"}});
+  tInp.addEventListener("input",e=>{ _calModalData.title=e.target.value; });
+  modal.appendChild(tInp);
+  // Date
+  modal.appendChild(h("div",{style:{fontSize:"10px",color:"#444",fontFamily:"monospace",marginBottom:"6px",letterSpacing:"0.5px"}},i18n().calDate));
+  const dInp=h("input",{type:"date",value:d.date,style:{width:"100%",background:"#0f0f1e",border:"1px solid #1e1e30",borderRadius:"8px",padding:"11px 13px",color:"#f0f0e8",fontSize:"14px",fontFamily:"'DM Sans',sans-serif",marginBottom:"14px",colorScheme:"dark"}});
+  dInp.addEventListener("change",e=>{ _calModalData.date=e.target.value; });
+  modal.appendChild(dInp);
+  // Time
+  modal.appendChild(h("div",{style:{fontSize:"10px",color:"#444",fontFamily:"monospace",marginBottom:"6px",letterSpacing:"0.5px"}},i18n().calTime));
+  const tmInp=h("input",{type:"time",value:d.time,style:{width:"100%",background:"#0f0f1e",border:"1px solid #1e1e30",borderRadius:"8px",padding:"11px 13px",color:"#f0f0e8",fontSize:"14px",fontFamily:"'DM Sans',sans-serif",marginBottom:"14px",colorScheme:"dark"}});
+  tmInp.addEventListener("change",e=>{ _calModalData.time=e.target.value; });
+  modal.appendChild(tmInp);
+  // Duration
+  modal.appendChild(h("div",{style:{fontSize:"10px",color:"#444",fontFamily:"monospace",marginBottom:"6px",letterSpacing:"0.5px"}},i18n().calDuration));
+  const durRow=h("div",{style:{display:"flex",gap:"6px",marginBottom:"20px",flexWrap:"wrap"}});
+  [[15,"15м"],[30,"30м"],[60,"1ч"],[90,"1.5ч"],[120,"2ч"],[180,"3ч"]].forEach(([mins,lbl])=>{
+    durRow.appendChild(h("button",{
+      style:{padding:"6px 12px",borderRadius:"6px",border:`1px solid ${d.durationMin===mins?"#4ECDC4":"#252540"}`,fontSize:"12px",background:d.durationMin===mins?"#4ECDC420":"transparent",color:d.durationMin===mins?"#4ECDC4":"#666"},
+      onClick:()=>{ _calModalData.durationMin=mins; render(); }
+    },lbl));
+  });
+  modal.appendChild(durRow);
+  const saveBtn=h("button",{style:{background:"#4ECDC4",color:"#0a0a14",border:"none",borderRadius:"10px",padding:"13px 24px",fontSize:"14px",fontWeight:"700",width:"100%"},
+    onClick:async ()=>{
+      if(!_calModalData.title.trim()) return;
+      saveBtn.textContent="Saving..."; saveBtn.disabled=true;
+      try{
+        if(isEdit) await gcalUpdateEvent(_calModalData.eventId,_calModalData.title,_calModalData.date,_calModalData.time,_calModalData.durationMin);
+        else await gcalAddEvent(_calModalData.title,_calModalData.date,_calModalData.time,_calModalData.durationMin);
+        await gcalFetchEvents();
+        setState({modal:null});
+      } catch(e){
+        saveBtn.textContent=isEdit?i18n().calUpdate:i18n().calSave;
+        saveBtn.disabled=false;
+        alert("Error: "+(e.message||"Failed"));
+      }
+    }
+  },isEdit?i18n().calUpdate:i18n().calSave);
+  modal.appendChild(saveBtn);
+  ov.appendChild(modal);
+  return ov;
+}
+
 // ── LOGIN SCREEN ──────────────────────────────────────────────────────────
 function renderLogin(){
   const app = document.getElementById("app");
@@ -1346,6 +1560,9 @@ window.addEventListener("DOMContentLoaded", async ()=>{
     localStorage.setItem("fo_tasks", JSON.stringify(cloud.tasks || []));
     localStorage.setItem("fo_energy", JSON.stringify(cloud.energy || {}));
     state.tasks = cloud.tasks || [];
+    // Bug fix: sync energy from cloud so mood prompt isn't shown if already set on another device
+    const ce = cloud.energy;
+    if(ce && ce.date === todayStr()) state.energy = ce.level;
   }
 
   // Сохраняем при скрытии вкладки или закрытии
@@ -1367,6 +1584,11 @@ window.addEventListener("DOMContentLoaded", async ()=>{
 
   // Подписываемся на real-time изменения от других устройств
   subscribeRealtime();
+
+  // Init Google Calendar if previously connected
+  if(gcalIsConnected() && _gcalCalendarId){
+    gcalFetchEvents().then(()=>render()).catch(()=>{});
+  }
 
   // Слушаем изменения auth (на случай логаута в другой вкладке)
   supa.auth.onAuthStateChange((event)=>{
